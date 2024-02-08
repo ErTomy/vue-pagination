@@ -21,9 +21,12 @@
         page: 1,
         last_page: 1,
         page_size: 10,
+        block_size: 3,
         total: 0,
         from: 0,
-        to: 0
+        to: 0,
+        order_field: 'id',
+        order_type: 'asc' 
     };
 
     let language = {
@@ -42,7 +45,7 @@
     function loadData(){
         loading = true;
         axios
-            .post(props.search, {page: pagination.page, page_size : pagination.page_size, term: pagination.term})
+            .post(props.search, {page: pagination.page, page_size : pagination.page_size, term: pagination.term, order_field: pagination.order_field, order_type: pagination.order_type})
             .then(response => {
                 items.rows = response.data.data;                               
                 pagination = {
@@ -52,7 +55,10 @@
                     page_size: response.data.per_page,
                     total: response.data.total,
                     from: response.data.from,
-                    to: response.data.to
+                    to: response.data.to,
+                    order_field: pagination.order_field,
+                    order_type: pagination.order_type,
+                    block_size: pagination.block_size
                 }
                 loading = false;
             })
@@ -62,9 +68,31 @@
     }
 
     function gotoPage(page){
-        pagination.page = page;
+        if(page > pagination.last_page){
+          pagination.page = pagination.last_page;
+        }else if(page < 1){
+          pagination.page = 1;
+        }else{
+          pagination.page = page;
+        }
+
         loadData();
     }
+
+    function orderBy(index){
+      if(index != pagination.order_field){
+        pagination.order_field = index;
+        pagination.order_type = 'asc';
+      }else{
+        if(pagination.order_type == 'asc'){
+          pagination.order_type = 'desc';
+        }else{
+          pagination.order_type = 'asc';
+        }
+      }
+      loadData();
+    }
+
 
     function search(){
       pagination.page = 1;
@@ -101,7 +129,7 @@
                     <div class="d-flex mt-3 mt-lg-0">
                       <form action="#">
                         <div class="input-group " v-if="inputbox">
-                          <input class="form-control rounded-3 search" type="search" v-model="pagination.term" id="searchInput" :placeholder="language.search" @keyup.enter="search()">
+                          <input class="form-control rounded-3 search" type="search" v-model="pagination.term" id="searchInput" :placeholder="language.search" @keyup.enter.prevent="search()">
                           <span class="input-group-append">
                             <button class="btn  ms-n10 rounded-0 rounded-end" type="button" @click.stop.prevent="search()">
                               <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search text-dark">
@@ -120,11 +148,11 @@
                       
 
 
-<table class="table text-nowrap mb-0 table-centered" v-if="!loading">
+<table class="table text-nowrap mb-0 table-centered dataTable" v-if="!loading">
         <thead class="table-light">
             <tr>
                 <th >#</th>
-                <th class="sort" data-sort="index" v-for="(field, index) in headers" :key="index">{{field}}</th>
+                <th class="sort" :class="(pagination.order_field == index) ? pagination.order_type : pagination.order_field" data-sort="index" v-for="(field, index) in headers" :key="index" @click.stop.prevent="orderBy(index)">{{field}}</th>
                 <th v-if="Object.keys(buttons).length > 0 || Object.keys(extras).length > 0" >{{language.actions}}</th>
             </tr>
         </thead>
@@ -156,9 +184,6 @@
         </tbody>
     </table>
 
-
-
-
                     </div>
                   </div>
 
@@ -167,16 +192,24 @@
                     <nav class="mt-2 mt-md-0">
                       <div class="d-flex justify-content-end mt-3">
                         <div class="pagination-wrap hstack">
+                          <a class="page-item pagination-prev" href="#" @click.stop.prevent="gotoPage(pagination.page - pagination.block_size)" v-if="pagination.page > pagination.block_size">
+                            &lt;&lt;
+                          </a>
                           <a class="page-item pagination-prev" href="#" @click.stop.prevent="gotoPage(pagination.page -1)" v-if="pagination.page > 1">
                             {{language.previous}}
                           </a>
                           <ul class="pagination listjs-pagination mb-0">
-                                <li v-for="index in pagination.last_page" :key="index" :class="index == pagination.page? 'active':'' ">
+                              <template v-for="index in pagination.last_page" :key="index">
+                                <li v-if="pagination.page - pagination.block_size < index && index < pagination.page + pagination.block_size"  :class="index == pagination.page? 'active':'' ">
                                     <a class="page" href="#" @click.stop.prevent="gotoPage(index)">{{index}}</a>
                                 </li>
+                              </template>  
                           </ul>
                           <a class="page-item pagination-next" href="#" @click.stop.prevent="gotoPage(pagination.page +1)" v-if="pagination.page < pagination.last_page">
                             {{language.next}}
+                          </a>
+                          <a class="page-item pagination-next" href="#" @click.stop.prevent="gotoPage(pagination.page + pagination.block_size)" v-if="pagination.page < (pagination.last_page - pagination.block_size)">
+                            &gt;&gt;
                           </a>
                         </div>
                       </div>
@@ -184,16 +217,6 @@
                   </div>
 
                 </div>
-
-
-
-
-
-
-
-
-    
-    
 
 </template>
 
@@ -293,5 +316,48 @@
   font-size: .875rem;
   margin-right: .25rem;
   position: relative;
+}
+
+
+
+table.dataTable thead > tr > th.sort::after
+{
+  top: 50%;
+  content: "▾";
+}
+table.dataTable thead > tr > th.sort::before, 
+table.dataTable thead > tr > th.sort::after {
+  position: absolute;
+  display: block;
+  opacity: .35;
+  right: 10px;
+  line-height: 9px;
+  font-size: .9em;
+}
+table.dataTable thead > tr > th.sort::before
+{
+  bottom: 50%;
+  content: "▴";
+}
+table.dataTable thead > tr > th.sort 
+{
+  cursor: pointer;
+  position: relative;
+  padding-right: 26px;
+}
+table.dataTable thead th {
+  text-align: left;
+}
+table.dataTable td, table.dataTable th {
+  -webkit-box-sizing: content-box;
+  box-sizing: content-box;
+}
+.table-centered td, .table-centered th {
+  vertical-align: middle !important;
+}
+table.dataTable thead > tr > th.sort.asc::before,
+table.dataTable thead > tr > th.sort.desc::after
+{
+  opacity: 1;
 }
 </style>

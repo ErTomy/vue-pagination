@@ -60,7 +60,7 @@ Este es un ejemplo de como se cargan los resultados en la **url** que se pasa co
  public function search(Request $request){
     if($request->ajax()){
         $search = $request->term;
-        return User::where('name', 'like', "%{$search}%")->paginate($request->page_size);        
+        return User::where('name', 'like', "%{$search}%")->orderBy( $request->order_field, $request->order_type)->paginate($request->page_size);        
     }    
 }
 ```
