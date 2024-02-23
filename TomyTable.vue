@@ -13,6 +13,7 @@ const props = defineProps({
 });
 
 
+
 let headers = reactive({});
 let items = reactive({ rows: [] });
 let pagination = {
@@ -164,7 +165,7 @@ onMounted(() => {
                 @click.stop.prevent="orderBy(index)" >
                 {{ field }}
               </th>
-              <th v-if="Object.keys(buttons).length > 0 || Object.keys(extras).length > 0 ">
+              <th v-if="Object.keys(buttons).length > 0 || extras !== undefined">
                 {{ language.actions }}
               </th>
             </tr>
@@ -175,7 +176,7 @@ onMounted(() => {
               <td v-for="(field, index) in headers" :key="index">
                 {{ item[index] }}
               </td>
-              <td v-if="Object.keys(buttons).length > 0 || Object.keys(extras).length > 0">
+              <td v-if="Object.keys(buttons).length > 0 || extras !== undefined">
                 <div class="d-flex align-items-center">
                   <template v-for="(url, action) in buttons" :key="action">
                     <a :href="url.replace('ID', item.id)" class="btn btn-icon btn-sm">
@@ -183,7 +184,7 @@ onMounted(() => {
                     </a>
                   </template>
 
-                  <div class="dropdown" v-if="Object.keys(extras).length > 0">
+                  <div class="dropdown" v-if="extras !== undefined">
                     <a class="btn btn-ghost btn-icon btn-sm rounded-circle" href="#!" role="button" data-bs-toggle="dropdown" aria-expanded="false" >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -220,7 +221,7 @@ onMounted(() => {
       <span id="pagination-status">
         {{ language.showing }} {{ pagination.from }} {{ language.to }}
         {{ pagination.to }} {{ language.of }} {{ pagination.total }}
-        {{ language.records }}}
+        {{ language.records }}
       </span>
       <nav class="mt-2 mt-md-0">
         <div class="d-flex justify-content-end mt-3">
