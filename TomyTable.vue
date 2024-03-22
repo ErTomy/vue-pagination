@@ -10,6 +10,7 @@ const props = defineProps({
   extras: Object,
   inputbox: Boolean,
   translates: Object,
+  callback: String
 });
 
 
@@ -66,6 +67,9 @@ function loadData() {
         block_size: pagination.block_size,
       };
             
+      if(props.callback){
+        window[props.callback](response.data);        
+      }       
     })
     .catch((error) => {
       console.log(error);
